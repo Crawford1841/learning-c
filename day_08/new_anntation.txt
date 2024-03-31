@@ -1,0 +1,50 @@
+#include<iostream>
+#include<cmath>
+using namespace std;
+class MyLine
+{
+	private:
+		
+		double p1_x,p1_y;
+		
+		double p2_x,p2_y;
+	public:
+		
+		MyLine(double p1_x,double p1_y,double p2_x,double p2_y); 
+		
+		double slope();
+		
+		bool isOnLine(double x,double y);
+		
+		double distance(double x,double y); 
+};
+MyLine::MyLine(double x1,double y1,double x2,double y2)
+{
+	p1_x = x1;
+	p1_y = y1;
+	p2_x = x2;
+	p2_y = y2;
+}
+double MyLine::slope()
+{
+	return (p2_y - p1_y)/(p2_x - p1_x);
+}
+bool MyLine::isOnLine(double x,double y)
+{
+    bool isOn = (y-p1_y) ==(slope()*(x-p1_x));
+	return isOn;
+}
+double MyLine::distance(double x,double y)
+{
+	double a = p2_y-p1_y;
+	double b = p1_x-p2_x;
+	double c = (p2_x*p1_y) - (p1_x*p2_y);
+	return abs(a*x+b*y+c) / sqrt(a*a+b*b);
+}
+int main()
+{
+	MyLine test(3,3,8,8);
+	cout<<test.slope()<<endl;
+	cout<<test.isOnLine(6,6)<<endl;
+	cout<<test.distance(6,6)<<endl;
+}

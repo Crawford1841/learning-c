@@ -1,50 +1,95 @@
 #include <iostream>
 #include <fstream>
-#include <string>
+#include <Windows.h>
+#include <tchar.h>
 using namespace std;
-// 删除行注释
-std::string removeLineComments(const std::string& line) {
-    size_t pos = line.find("//");
-    if (pos != std::string::npos) {
-        return line.substr(0, pos);
+
+bool clearSingle(const char *old_file, const char *new_file)
+{
+    fstream oldFile(old_file,ios::in);
+    fstream newFile(new_file,ios::out);
+    if (oldFile.is_open() && newFile.is_open())
+    {
+            const int size = 1024;// 设定每行的缓存大小
+            char temp[size];
+            oldFile.seekg(0,ios::beg);//指针移向文件头
+            while(oldFile.getline(temp,size)){// 逐行读取，遇单行注释则终止
+                for(int i=0;i<size;i++){
+                    if(temp[i]=='/' && temp[i+1]=='/'){
+                        temp[i]=0;//表示截断
+                    }
+                }
+                if(strlen(temp)!=0){
+                    newFile<<temp<<endl;
+                }
+            } 
+            oldFile.close();
+            newFile.close();
+            cout<<"删除单行注释成功！"<<endl;
+        return true;
+    }else{
+        cout << "源文件无法打开或无法创建新文件，请重试！\n";
+        return false;
     }
-    return line;
 }
 
-// 删除块注释
-std::string removeBlockComments(const std::string& content) {
-    std::string result;
-    size_t start = content.find("/*");
-    size_t end = content.find("*/");
-    while (start != std::string::npos && end != std::string::npos) {
-        result += content.substr(0, start);
-        content = content.substr(end + 2);
-        start = content.find("/*");
-        end = content.find("*/");
+bool clearMutiple(const char *old_file, const char *new_file){
+    fstream oldFile(old_file,ios::in);
+    fstream newFile(new_file,ios::out);
+    if (oldFile.is_open() && newFile.is_open()){
+        const int size = 250;
+        char temp[size];
+        bool meetFlag = false;//是否遇到多行注释
+        oldFile.seekg(0,ios::beg);
+        while(oldFile.getline(temp,size)){
+            int i;
+            for(i=0;i<size-1;i++){
+                if(temp[i] == '\n'){
+                    break;
+                }
+                /*
+                    没遇见标记前，开启起始行检测标记
+                */
+               if (!meetFlag && temp[i] == '/' && temp[i + 1] == '*')
+				{
+					temp[i] = 0;
+					meetFlag = !meetFlag;   //遇见了标记，故重置标记
+				}
+               if(temp[i]=='*' && temp[i+1]=='/'){// 找到了标记的结束位置
+                    meetFlag = !meetFlag; // 重置标记
+                    int j,k;
+                    for(j=i+2,k=0;j<size;j++){
+                        //如果是换行符说明到达块注释尽头，则直接跳过
+                        if(temp[j]=='\n'){
+                            break;
+                        }
+                        //如果发现没有换行，则向前移
+                        temp[k++] = temp[j];
+                    }
+                    temp[--j] = 0;
+               }
+            }
+            if(!meetFlag && strlen(temp)>0){
+                newFile<<temp<<endl;
+            }
+        }
+        oldFile.close();
+        newFile.close();
+        cout<<"删除注释成功！"<<endl;
+    }else{
+        cout << "源文件无法打开或无法创建新文件，请重试！\n";
+        return false;
     }
-    result += content;
-    return result;
 }
 
-int main() {
-    std::ifstream inputFile("anntation.txt"); // 输入源文件名
-    std::ofstream outputFile("new_anntation.txt"); // 输出新文件名
 
-    if (!inputFile || !outputFile) {
-        std::cerr << "无法打开文件！" << std::endl;
-        return 1;
-    }
+void clear(const char *old_file, const char *new_file){
+    clearSingle(old_file,"temp.txt");
+    clearMutiple("temp.txt", new_file);
+    DeleteFile(_T("temp.txt"));   //删除缓存文件
 
-    std::string line;
-    while (std::getline(inputFile, line)) {
-        line = removeLineComments(line);
-        outputFile << line << std::endl;
-    }
-
-    inputFile.close();
-    outputFile.close();
-
-    std::cout << "已生成新文件 output.cpp" << std::endl;
-
-    return 0;
+}
+int main()
+{
+    clear("anntation.txt", "new_anntation.txt");
 }
